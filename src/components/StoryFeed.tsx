@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StoryMessage } from '@/lib/game_state';
-import { Sparkles, Dices, User, ScrollText, AlertTriangle } from 'lucide-react';
+import { Sparkles, Dices, User, ScrollText, AlertTriangle, Volume2, Square } from 'lucide-react';
+import { speechService } from '@/lib/speech';
 
 interface StoryFeedProps {
   messages: StoryMessage[];
@@ -9,24 +10,63 @@ interface StoryFeedProps {
 
 export const StoryFeed: React.FC<StoryFeedProps> = ({ messages, isThinking }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
+  const handleToggleSpeak = (msgId: string, text: string) => {
+    if (speakingMsgId === msgId) {
+      speechService.stop();
+      setSpeakingMsgId(null);
+    } else {
+      setSpeakingMsgId(msgId);
+      speechService.speak(
+        text,
+        () => setSpeakingMsgId(null),
+        () => setSpeakingMsgId(null)
+      );
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
       {messages.map((msg) => {
         if (msg.sender === 'gm') {
+          const isThisSpeaking = speakingMsgId === msg.id;
+
           return (
             <div
               key={msg.id}
               className="bg-zinc-900/90 border border-zinc-800/90 rounded-xl p-4 md:p-5 shadow-lg relative group transition hover:border-zinc-700"
             >
-              <div className="flex items-center gap-2 mb-2 text-amber-400 text-xs font-serif font-bold tracking-wide">
-                <ScrollText className="w-4 h-4 text-amber-400" />
-                <span>Pán Jeskyně</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-amber-400 text-xs font-serif font-bold tracking-wide">
+                  <ScrollText className="w-4 h-4 text-amber-400" />
+                  <span>Pán Jeskyně</span>
+                </div>
+                {/* Tlačítko pro poslech zprávy */}
+                <button
+                  onClick={() => handleToggleSpeak(msg.id, msg.text)}
+                  className={`p-1 rounded-md transition text-xs flex items-center gap-1 ${
+                    isThisSpeaking
+                      ? 'bg-amber-500/20 text-amber-300 animate-pulse'
+                      : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-800'
+                  }`}
+                  title={isThisSpeaking ? 'Zastavit čtení' : 'Přečíst nahlas'}
+                >
+                  {isThisSpeaking ? (
+                    <>
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                      <span className="text-[10px]">Čte...</span>
+                    </>
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  )}
+                </button>
               </div>
+
               <div className="text-sm md:text-base text-zinc-300 font-serif leading-relaxed whitespace-pre-line selection:bg-amber-900 selection:text-amber-100">
                 {msg.text}
               </div>

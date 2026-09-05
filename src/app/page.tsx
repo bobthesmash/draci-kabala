@@ -17,7 +17,8 @@ import {
   clearSavedGame
 } from '@/lib/game_state';
 import { RollResult, formatRollForGM } from '@/lib/drd_engine';
-import { Sparkles, Dices, RotateCcw, BookOpen, Skull } from 'lucide-react';
+import { Sparkles, Dices, RotateCcw, BookOpen, Skull, Volume2, VolumeX } from 'lucide-react';
+import { speechService } from '@/lib/speech';
 
 export default function Home() {
   const [character, setCharacter] = useState<PlayerCharacter>(INITIAL_CHARACTER);
@@ -27,6 +28,7 @@ export default function Home() {
   const [isThinking, setIsThinking] = useState<boolean>(false);
   const [isCreationOpen, setIsCreationOpen] = useState<boolean>(false);
   const [showRulesInfo, setShowRulesInfo] = useState<boolean>(false);
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState<boolean>(true);
 
   // Stav pro DiceRollModal
   const [diceModal, setDiceModal] = useState<{
@@ -95,6 +97,9 @@ export default function Home() {
         setMessages([welcomeMsg]);
         setPendingCheck(data.kabalaData?.check_required || undefined);
         setCurrentChoices(data.kabalaData?.choices || []);
+        if (isSpeechEnabled) {
+          speechService.speak(data.narration);
+        }
       }
     } catch (e) {
       console.error('Chyba při startu hry:', e);
@@ -193,6 +198,9 @@ export default function Home() {
         setMessages(prev => [...prev, gmMsg]);
         setPendingCheck(kd?.check_required || undefined);
         setCurrentChoices(kd?.choices || []);
+        if (isSpeechEnabled) {
+          speechService.speak(data.narration);
+        }
       }
     } catch (err) {
       console.error('Chyba při odesílání akce:', err);
@@ -252,9 +260,24 @@ export default function Home() {
     handleSendAction(`[Aktivuji schopnost: ${abilityName} (Spotřebováno ${cost} Kavany)]`);
   };
 
+  // Přepínání hlasového předčítání
+  const handleToggleSpeech = () => {
+    if (isSpeechEnabled) {
+      speechService.stop();
+      setIsSpeechEnabled(false);
+    } else {
+      setIsSpeechEnabled(true);
+      const lastGmMsg = messages.filter(m => m.sender === 'gm').slice(-1)[0];
+      if (lastGmMsg) {
+        speechService.speak(lastGmMsg.text);
+      }
+    }
+  };
+
   // Reset hry
   const handleResetGame = () => {
     if (window.confirm('Opravdu chceš začít novou hru? Současný postup v Klipot bude smazán.')) {
+      speechService.stop();
       clearSavedGame();
       setIsCreationOpen(true);
     }
@@ -280,6 +303,29 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Tlačítko Mute / Voice (Předčítání nahlas) v pravém horním rohu */}
+          <button
+            onClick={handleToggleSpeech}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition flex items-center gap-1.5 shadow ${
+              isSpeechEnabled
+                ? 'bg-amber-950/80 border-amber-500 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+            }`}
+            title={isSpeechEnabled ? 'Hlasové předčítání zapnuto (kliknutím ztlumit)' : 'Předčítání ztlumeno (kliknutím zapnout hlas)'}
+          >
+            {isSpeechEnabled ? (
+              <>
+                <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span className="hidden sm:inline">Hlas: Zap</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-4 h-4 text-zinc-500" />
+                <span className="hidden sm:inline">Ztlumeno</span>
+              </>
+            )}
+          </button>
+
           {/* Volný hod kostkou */}
           <button
             onClick={handleFreeRoll}
