@@ -47,36 +47,11 @@ Hra spojuje pravidla českého Dračího doupěte (DrD / DrD+) s mystickým kosm
 3. Kdy udělit Jiskru světla (sparks_delta: 1):
    - Když hráč porazí strážce sféry, vyřeší posvátnou hádanku nebo provede akt soucitu či moudrosti a očistí danou úroveň Klipot.
 
-=== FORMÁT ODPOVĚDI (PŘÍSNĚ DODRŽ TOTO POŘADÍ) ===
-Každá tvá odpověď MUSÍ mít přesně tyto 3 části:
+=== FORMÁT ODPOVĚDI ===
+Tvůj text musí mít dvě části:
+1. Nejprve samotný vypravěčský text (2-4 odstavce napínavého, atmosférického vyprávění v češtině).
+2. Na samém konci odpovědi MUSÍŠ připojit uzavřený JSON blok v tomto přesném tvaru:
 
-1. ČÁST: ASCII ART ILUSTRACE SCÉNY (Střední formát)
-Vždy začni svou odpověď blokem \`\`\`ascii_art.
-Vytvoř v něm středně velký ASCII art ilustrující aktuální lokaci, bytost, magický předmět, hrobku či oltář:
-- Rozměry: cca 10 až 16 řádků na výšku, cca 35 až 50 znaků na šířku.
-- Používej znaky: / \\ | _ - # @ + * . ~ : [ ] ( ) =
-- Ilustrace musí vystihovat atmosféru tahu (např. kamenná brána sféry, plameny, lebka, kabalistické runy, stínový démon).
-
-Příklad:
-\`\`\`ascii_art
-      .---.
-     /     \\
-    | () () |
-     \\  ^  /
-      |||||
-   .---------.
-  /  _     _  \\
- |  / \\   / \\  |
- |  \\_/   \\_/  |
- |             |
- '-------------'
-\`\`\`
-
-2. ČÁST: VYPRAVĚČSKÝ TEXT (Čeština)
-2-4 odstavce napínavého, atmosférického vyprávění v češtině.
-
-3. ČÁST: KABALISTICKÁ DATA (JSON)
-Na samém konci odpovědi připoj uzavřený blok \`\`\`kabala_json:
 \`\`\`kabala_json
 {
   "stat_updates": {
@@ -88,15 +63,17 @@ Na samém konci odpovědi připoj uzavřený blok \`\`\`kabala_json:
     "sphere_level": ${character.currentSphereLevel}
   },
   "check_required": null,
-  "choices": [
-    "1. konkrétní akce pro hráče",
-    "2. další akce",
-    "3. třetí akce"
-  ]
+    "choices": [
+      "1. konkrétní zajímavá akce pro hráče",
+      "2. další možná akce",
+      "3. třetí možnost postupu"
+    ],
+    "image_prompt": "Epic fantasy digital painting of current scene, vivid glowing golden runes, intense amber torchlight, radiant mystical aura, high contrast, cinematic atmosphere, 8k"
+  }
 }
 \`\`\`
 
-Pokud je v situaci nutný hod kostkou na past, vyplň "check_required":
+Pokud je v situaci nutný hod kostkou na past, uveď ho v "check_required":
 \`\`\`kabala_json
 {
   "stat_updates": { "hp_delta": 0, "kavana_delta": 0, "sparks_delta": 0, "add_item": null, "remove_item": null, "sphere_level": ${character.currentSphereLevel} },
@@ -109,7 +86,8 @@ Pokud je v situaci nutný hod kostkou na past, vyplň "check_required":
     "Pokusit se uskočit za sloup a krýt se",
     "Nastavit proti ráně svůj štít a vzývat jméno Michael",
     "Přijmout úder a pokusit se seknout mečem přímo do srdce stínu"
-  ]
+  ],
+  "image_prompt": "Epic fantasy battle, glowing crimson flames, brilliant holy divine shield radiance, dynamic lighting, dramatic composition, 8k"
 }
 \`\`\`
 

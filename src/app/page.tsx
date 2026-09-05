@@ -125,32 +125,14 @@ export default function Home() {
             if (content) {
               fullAccumulated += content;
 
-              // 1. Průběžná extrakce ASCII artu (pokud se zrovna generuje nebo už je hotový)
-              let currentAscii: string | undefined = undefined;
-              const asciiStreamMatch = fullAccumulated.match(/```(?:ascii_art|ascii)?\s*([\s\S]*?)(?:```|$)/);
-              if (asciiStreamMatch && asciiStreamMatch[1].trim()) {
-                currentAscii = asciiStreamMatch[1].trim();
-              }
+              // Zobrazujeme text před případným kabala_json blokem
+              const visiblePart = fullAccumulated.split('```')[0].trim();
+              setMessages(prev => prev.map(m => m.id === tempGmId ? { ...m, text: visiblePart } : m));
 
-              // 2. Čistý text vyprávění bez kódových bloků (ascii_art a kabala_json)
-              const visiblePart = fullAccumulated
-                .replace(/```(?:ascii_art|ascii)[\s\S]*?(?:```|$)/g, '')
-                .replace(/```(?:kabala_json|json)?[\s\S]*?(?:```|$)/g, '')
-                .trim();
-
-              setMessages(prev => prev.map(m => m.id === tempGmId ? {
-                ...m,
-                text: visiblePart,
-                asciiArt: currentAscii
-              } : m));
-
-              // 3. Streamované čtení vět: pouze pokud jsme MIMO kódový blok (aby nečetlo ASCII znaky či JSON)
+              // Streamované čtení vět (okamžitě jakmile je věta dokončena)
               if (isSpeechEnabled) {
-                const codeBlockCount = (fullAccumulated.match(/```/g) || []).length;
-                const isInsideCodeBlock = codeBlockCount % 2 === 1;
-
-                if (!isInsideCodeBlock) {
-                  sentenceBuffer += content;
+                sentenceBuffer += content;
+                if (!sentenceBuffer.includes('```')) {
                   const match = sentenceBuffer.match(/^([\s\S]*?[.!?\n]+)\s*([\s\S]*)$/);
                   if (match) {
                     const sentenceToSpeak = match[1].trim();
@@ -159,8 +141,6 @@ export default function Home() {
                       speechService.enqueueSentence(sentenceToSpeak);
                     }
                   }
-                } else {
-                  sentenceBuffer = '';
                 }
               }
             }
@@ -173,19 +153,6 @@ export default function Home() {
         speechService.enqueueSentence(sentenceBuffer.trim());
       }
 
-      // Finální extrakce ASCII artu
-      let finalAscii: string | undefined = undefined;
-      const asciiMatch = fullAccumulated.match(/```(?:ascii_art|ascii)?\s*([\s\S]*?)\s*```/);
-      if (asciiMatch && asciiMatch[1].trim()) {
-        finalAscii = asciiMatch[1].trim();
-      }
-
-      // Finální čistý text vyprávění
-      const cleanNarration = fullAccumulated
-        .replace(/```(?:ascii_art|ascii)[\s\S]*?```/g, '')
-        .replace(/```(?:kabala_json|json)?[\s\S]*?```/g, '')
-        .trim();
-
       // Parsování JSON metadat na konci
       let kabalaData: any = null;
       const jsonMatch = fullAccumulated.match(/```(?:kabala_json|json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -196,6 +163,14 @@ export default function Home() {
           console.warn('Nepodařilo se naparsovat kabala_json:', e);
         }
       }
+
+      const cleanNarration = fullAccumulated.replace(/```(?:kabala_json|json)?[\s\S]*?```/g, '').trim();
+
+      // Generování unikátní ilustrace skrze náš proxy endpoint (proti blokování a s garancí jasu)
+      const rawPrompt = kabalaData?.image_prompt || 'ancient mystical sanctuary with brilliant radiant amber light, glowing sacred kabbalistic tree of life, dramatic illumination, high contrast fantasy artwork';
+      const cleanPrompt = rawPrompt.replace(/[*_#`]/g, '').trim();
+      const seed = Date.now();
+      const imageUrl = `/api/image?prompt=${encodeURIComponent(cleanPrompt)}&seed=${seed}`;
 
       // Aplikace stat updates
       if (kabalaData?.stat_updates) {
@@ -223,11 +198,11 @@ export default function Home() {
         });
       }
 
-      // Aktualizace finální zprávy s ASCII artem a volbami (vše z jednoho NVIDIA streamu)
+      // Aktualizace finální zprávy s obrázkem a volbami
       setMessages(prev => prev.map(m => m.id === tempGmId ? {
         ...m,
         text: cleanNarration,
-        asciiArt: finalAscii,
+        imageUrl: imageUrl,
         checkRequired: kabalaData?.check_required || undefined,
         choices: kabalaData?.choices || []
       } : m));

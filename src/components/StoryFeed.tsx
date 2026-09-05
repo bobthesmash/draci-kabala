@@ -43,28 +43,6 @@ const SceneImage: React.FC<{ imageUrl: string }> = ({ imageUrl }) => {
   );
 };
 
-const AsciiScene: React.FC<{ art: string }> = ({ art }) => {
-  if (!art.trim()) return null;
-
-  return (
-    <div className="mb-4 rounded-xl overflow-hidden border border-amber-800/60 bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 p-3 sm:p-4 shadow-2xl relative">
-      <div className="flex items-center justify-between text-[10px] uppercase font-mono tracking-widest text-amber-500/80 mb-2 border-b border-amber-900/40 pb-1.5 select-none">
-        <span className="flex items-center gap-1.5">
-          <span className="text-amber-400">✦</span> Vize sféry
-        </span>
-        <span className="text-zinc-500">ASCII Obraz</span>
-      </div>
-
-      <div className="overflow-x-auto py-1 flex justify-center scrollbar-thin scrollbar-thumb-zinc-800">
-        <pre className="font-mono text-[11px] sm:text-xs md:text-sm leading-tight text-amber-300 font-bold tracking-wider select-none [text-shadow:0_0_10px_rgba(245,158,11,0.45)] whitespace-pre">
-          {art}
-        </pre>
-      </div>
-      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent pointer-events-none" />
-    </div>
-  );
-};
-
 const GmMessageCard: React.FC<{
   msg: StoryMessage;
   isSpeechEnabled: boolean;
@@ -76,12 +54,10 @@ const GmMessageCard: React.FC<{
         <span>Pán Jeskyně</span>
       </div>
 
-      {/* Vizuální scenerie tahu: přednostně ASCII art vygenerovaný přímo LLM */}
-      {msg.asciiArt ? (
-        <AsciiScene art={msg.asciiArt} />
-      ) : msg.imageUrl ? (
+      {/* Vizuální scenerie tahu */}
+      {msg.imageUrl && (
         <SceneImage imageUrl={msg.imageUrl} />
-      ) : null}
+      )}
 
       {/* Text vyprávění: Zobrazuje se pouze při vypnutém zvuku */}
       {!isSpeechEnabled && (
