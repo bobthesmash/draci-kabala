@@ -166,11 +166,11 @@ export default function Home() {
 
       const cleanNarration = fullAccumulated.replace(/```(?:kabala_json|json)?[\s\S]*?```/g, '').trim();
 
-      // Generování unikátní ilustrace z Pollinations AI
-      const rawPrompt = kabalaData?.image_prompt || 'Dark fantasy ancient temple realm of Klipot, glowing Hebrew sigils, eerie green fog, cinematic dramatic lighting, 8k digital painting';
-      const cleanPrompt = rawPrompt.replace(/[^\w\s,-]/g, '').trim();
+      // Generování unikátní ilustrace skrze náš proxy endpoint (proti blokování a s garancí jasu)
+      const rawPrompt = kabalaData?.image_prompt || 'ancient mystical sanctuary with brilliant radiant amber light, glowing sacred kabbalistic tree of life, dramatic illumination, high contrast fantasy artwork';
+      const cleanPrompt = rawPrompt.replace(/[*_#`]/g, '').trim();
       const seed = Date.now();
-      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=960&height=540&nologo=true&seed=${seed}`;
+      const imageUrl = `/api/image?prompt=${encodeURIComponent(cleanPrompt)}&seed=${seed}`;
 
       // Aplikace stat updates
       if (kabalaData?.stat_updates) {

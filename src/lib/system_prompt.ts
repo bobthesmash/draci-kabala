@@ -68,7 +68,7 @@ Tvůj text musí mít dvě části:
       "2. další možná akce",
       "3. třetí možnost postupu"
     ],
-    "image_prompt": "Dark fantasy digital painting of the current scene, atmosphere, room or monster in cinematic style, 8k"
+    "image_prompt": "Epic fantasy digital painting of current scene, vivid glowing golden runes, intense amber torchlight, radiant mystical aura, high contrast, cinematic atmosphere, 8k"
   }
 }
 \`\`\`
@@ -87,7 +87,7 @@ Pokud je v situaci nutný hod kostkou na past, uveď ho v "check_required":
     "Nastavit proti ráně svůj štít a vzývat jméno Michael",
     "Přijmout úder a pokusit se seknout mečem přímo do srdce stínu"
   ],
-  "image_prompt": "Dark fantasy digital painting, shadow demon claw attack in obsidian tomb, dramatic lighting, 8k"
+  "image_prompt": "Epic fantasy battle, glowing crimson flames, brilliant holy divine shield radiance, dynamic lighting, dramatic composition, 8k"
 }
 \`\`\`
 

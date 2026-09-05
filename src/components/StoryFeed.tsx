@@ -8,6 +8,41 @@ interface StoryFeedProps {
   isThinking: boolean;
 }
 
+const SceneImage: React.FC<{ imageUrl: string }> = ({ imageUrl }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="mb-4 rounded-xl overflow-hidden border border-amber-900/60 relative aspect-video bg-zinc-950 shadow-xl">
+      {!loaded && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-500 bg-zinc-950 z-10">
+          <Sparkles className="w-6 h-6 text-amber-400 animate-spin" />
+          <span className="text-xs font-serif italic text-amber-300/90 tracking-wide">
+            Vyvolávám vizi sféry...
+          </span>
+        </div>
+      )}
+
+      {error ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-xs text-zinc-500 p-4 text-center bg-zinc-950">
+          <span className="text-amber-500/80 text-sm mb-1">✧</span>
+          <span className="font-serif italic text-zinc-400">Vize sféry se na okamžik rozplynula v astrální mlze.</span>
+        </div>
+      ) : (
+        <img
+          src={imageUrl}
+          alt="Kabalistická vize sféry"
+          className={`w-full h-full object-cover transition-all duration-700 ${
+            loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+        />
+      )}
+    </div>
+  );
+};
+
 export const StoryFeed: React.FC<StoryFeedProps> = ({ messages, isThinking }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
@@ -67,17 +102,9 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({ messages, isThinking }) =>
                 </button>
               </div>
 
-              {/* Vizuální scenerie tahu z Pollinations AI */}
+              {/* Vizuální scenerie tahu */}
               {msg.imageUrl && (
-                <div className="mb-3.5 rounded-lg overflow-hidden border border-amber-900/40 relative aspect-video bg-zinc-950 shadow-inner group/img">
-                  <img
-                    src={msg.imageUrl}
-                    alt="Kabalistická scenérie"
-                    className="w-full h-full object-cover transition duration-500 group-hover/img:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent pointer-events-none" />
-                </div>
+                <SceneImage imageUrl={msg.imageUrl} />
               )}
 
               <div className="text-sm md:text-base text-zinc-300 font-serif leading-relaxed whitespace-pre-line selection:bg-amber-900 selection:text-amber-100">
