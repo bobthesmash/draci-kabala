@@ -67,6 +67,19 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({ messages, isThinking }) =>
                 </button>
               </div>
 
+              {/* Vizuální scenerie tahu z Pollinations AI */}
+              {msg.imageUrl && (
+                <div className="mb-3.5 rounded-lg overflow-hidden border border-amber-900/40 relative aspect-video bg-zinc-950 shadow-inner group/img">
+                  <img
+                    src={msg.imageUrl}
+                    alt="Kabalistická scenérie"
+                    className="w-full h-full object-cover transition duration-500 group-hover/img:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent pointer-events-none" />
+                </div>
+              )}
+
               <div className="text-sm md:text-base text-zinc-300 font-serif leading-relaxed whitespace-pre-line selection:bg-amber-900 selection:text-amber-100">
                 {msg.text}
               </div>

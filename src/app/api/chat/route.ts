@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { buildGameMasterPrompt } from '@/lib/system_prompt';
 import { PlayerCharacter, StoryMessage } from '@/lib/game_state';
 
@@ -14,18 +14,12 @@ export async function POST(req: NextRequest) {
     const { character, messages, actionText } = body;
 
     const apiKey = process.env.NVIDIA_API_KEY || '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';
-    const model = process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning';
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'NVIDIA_API_KEY není nastaven v environment proměnných.' },
-        { status: 500 }
-      );
-    }
+    const primaryModel = process.env.NVIDIA_MODEL || 'meta/llama-3.2-11b-vision-instruct';
+    const fallbackModel = 'meta/llama-3.2-11b-vision-instruct';
 
     const systemPrompt = buildGameMasterPrompt(character);
 
-    // Sestavíme historii zpráv (posledních 8 zpráv pro optimální kontext)
+    // Sestavíme historii posledních 8 zpráv
     const recentMessages = messages.slice(-8).map(m => ({
       role: m.sender === 'gm' ? 'assistant' : 'user',
       content: m.text
@@ -40,70 +34,84 @@ export async function POST(req: NextRequest) {
       conversation.push({ role: 'user', content: actionText });
     }
 
-    // Volání NVIDIA NIM API
-    const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: conversation,
-        max_tokens: 2048,
-        temperature: 0.6,
-        top_p: 0.95
-      })
-    });
+    // Helper pro volání NVIDIA API s případným fallbackem
+    const callNvidiaStream = async (modelName: string): Promise<Response> => {
+      return await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: conversation,
+          max_tokens: 2048,
+          temperature: 0.6,
+          top_p: 0.95,
+          stream: true
+        })
+      });
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('NVIDIA API Error:', response.status, errorText);
-      return NextResponse.json(
-        { error: `Chyba při komunikaci s NVIDIA API (${response.status}): ${errorText}` },
-        { status: response.status }
-      );
+    let nvidiaRes = await callNvidiaStream(primaryModel);
+
+    // Pokud primární model vrátí chybu (např. 503 Worker overload), přepneme na osvědčený fallback
+    if (!nvidiaRes.ok && primaryModel !== fallbackModel) {
+      console.warn(`Primary model ${primaryModel} returned ${nvidiaRes.status}, falling back to ${fallbackModel}`);
+      nvidiaRes = await callNvidiaStream(fallbackModel);
     }
 
-    const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content || 'Pán Jeskyně se na chvíli odmlčel v hluboké meditaci...';
+    if (!nvidiaRes.ok) {
+      const errText = await nvidiaRes.text();
+      return new Response(JSON.stringify({ error: `NVIDIA API error: ${errText}` }), {
+        status: nvidiaRes.status,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
-    // Extrakce JSON bloku kabala_json
-    let cleanNarration = rawContent;
-    let kabalaData: any = null;
+    // Vytvoříme transformační stream, který předává textové tokeny klientovi
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    const jsonMatch = rawContent.match(/```(?:kabala_json|json)?\s*(\{[\s\S]*?\})\s*```/);
-    if (jsonMatch && jsonMatch[1]) {
-      try {
-        kabalaData = JSON.parse(jsonMatch[1]);
-        cleanNarration = rawContent.replace(jsonMatch[0], '').trim();
-      } catch (e) {
-        console.warn('Nepodařilo se naparsovat kabala_json block:', e);
+    const transformStream = new TransformStream({
+      async transform(chunk, controller) {
+        const text = decoder.decode(chunk);
+        const lines = text.split('\n');
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          if (trimmed === 'data: [DONE]') {
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(trimmed.slice(6));
+            const content = parsed.choices?.[0]?.delta?.content || '';
+            if (content) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+            }
+          } catch {
+            // Ignorovat neúplné json chunky
+          }
+        }
       }
-    }
-
-    // Fallback pokud model nevrátil choices
-    if (!kabalaData) {
-      kabalaData = {
-        stat_updates: { hp_delta: 0, kavana_delta: 0, sparks_delta: 0 },
-        check_required: null,
-        choices: [
-          'Opatrně prozkoumat okolní stíny a zdi',
-          'Vzývat ochranné jméno Boží a zapálit svíci',
-          'Pokročit hlouběji do chodby s mečem v pohotovosti'
-        ]
-      };
-    }
-
-    return NextResponse.json({
-      narration: cleanNarration,
-      kabalaData
     });
+
+    return new Response(nvidiaRes.body?.pipeThrough(transformStream), {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive'
+      }
+    });
+
   } catch (error: any) {
     console.error('Server error in /api/chat:', error);
-    return NextResponse.json(
-      { error: error?.message || 'Nastala neočekávaná chyba serveru.' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: error?.message || 'Server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

@@ -63,11 +63,13 @@ Tvůj text musí mít dvě části:
     "sphere_level": ${character.currentSphereLevel}
   },
   "check_required": null,
-  "choices": [
-    "1. konkrétní zajímavá akce pro hráče",
-    "2. další možná akce",
-    "3. třetí možnost postupu"
-  ]
+    "choices": [
+      "1. konkrétní zajímavá akce pro hráče",
+      "2. další možná akce",
+      "3. třetí možnost postupu"
+    ],
+    "image_prompt": "Dark fantasy digital painting of the current scene, atmosphere, room or monster in cinematic style, 8k"
+  }
 }
 \`\`\`
 
@@ -84,7 +86,8 @@ Pokud je v situaci nutný hod kostkou na past, uveď ho v "check_required":
     "Pokusit se uskočit za sloup a krýt se",
     "Nastavit proti ráně svůj štít a vzývat jméno Michael",
     "Přijmout úder a pokusit se seknout mečem přímo do srdce stínu"
-  ]
+  ],
+  "image_prompt": "Dark fantasy digital painting, shadow demon claw attack in obsidian tomb, dramatic lighting, 8k"
 }
 \`\`\`
 

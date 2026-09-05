@@ -70,42 +70,164 @@ export default function Home() {
     }
   }, [character, messages, pendingCheck, currentChoices]);
 
-  // Spuštění úvodního vyprávění
-  const triggerOpeningNarration = async (newChar: PlayerCharacter) => {
+  // Společný streamovací exekutor tahu
+  const executeTurnStream = async (currentChar: PlayerCharacter, currentMsgs: StoryMessage[], actionText: string) => {
     setIsThinking(true);
+    setPendingCheck(undefined);
+    speechService.stop();
+
+    const tempGmId = 'msg-gm-' + Date.now();
+    const placeholderGmMsg: StoryMessage = {
+      id: tempGmId,
+      sender: 'gm',
+      text: '',
+      timestamp: Date.now()
+    };
+
+    setMessages([...currentMsgs, placeholderGmMsg]);
+
+    let fullAccumulated = '';
+    let sentenceBuffer = '';
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          character: newChar,
-          messages: [],
-          actionText: 'Hra začíná. Hráč vstupuje do první sféry Klipot: Nahemoth (Šepotající kletby). Přivítej ho v roli Pána Jeskyně, popiš ponuré okolí rozbitých nádob a nabídni první zkoušku.'
+          character: currentChar,
+          messages: currentMsgs,
+          actionText
         })
       });
 
-      const data = await res.json();
-      if (data.narration) {
-        const welcomeMsg: StoryMessage = {
-          id: 'msg-' + Date.now(),
-          sender: 'gm',
-          text: data.narration,
-          timestamp: Date.now(),
-          checkRequired: data.kabalaData?.check_required || undefined,
-          choices: data.kabalaData?.choices || []
-        };
-        setMessages([welcomeMsg]);
-        setPendingCheck(data.kabalaData?.check_required || undefined);
-        setCurrentChoices(data.kabalaData?.choices || []);
-        if (isSpeechEnabled) {
-          speechService.speak(data.narration);
+      if (!res.ok || !res.body) {
+        throw new Error('Chyba při komunikaci se serverem.');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data: ')) continue;
+          const payload = trimmed.slice(6).trim();
+          if (payload === '[DONE]') break;
+
+          try {
+            const { content } = JSON.parse(payload);
+            if (content) {
+              fullAccumulated += content;
+
+              // Zobrazujeme text před případným kabala_json blokem
+              const visiblePart = fullAccumulated.split('```')[0].trim();
+              setMessages(prev => prev.map(m => m.id === tempGmId ? { ...m, text: visiblePart } : m));
+
+              // Streamované čtení vět (okamžitě jakmile je věta dokončena)
+              if (isSpeechEnabled) {
+                sentenceBuffer += content;
+                if (!sentenceBuffer.includes('```')) {
+                  const match = sentenceBuffer.match(/^([\s\S]*?[.!?\n]+)\s*([\s\S]*)$/);
+                  if (match) {
+                    const sentenceToSpeak = match[1].trim();
+                    sentenceBuffer = match[2];
+                    if (sentenceToSpeak.length > 2 && !sentenceToSpeak.startsWith('```')) {
+                      speechService.enqueueSentence(sentenceToSpeak);
+                    }
+                  }
+                }
+              }
+            }
+          } catch {}
         }
       }
-    } catch (e) {
-      console.error('Chyba při startu hry:', e);
+
+      // Dočíst zbytek věty z bufferu
+      if (isSpeechEnabled && sentenceBuffer.trim() && !sentenceBuffer.includes('```')) {
+        speechService.enqueueSentence(sentenceBuffer.trim());
+      }
+
+      // Parsování JSON metadat na konci
+      let kabalaData: any = null;
+      const jsonMatch = fullAccumulated.match(/```(?:kabala_json|json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        try {
+          kabalaData = JSON.parse(jsonMatch[1]);
+        } catch (e) {
+          console.warn('Nepodařilo se naparsovat kabala_json:', e);
+        }
+      }
+
+      const cleanNarration = fullAccumulated.replace(/```(?:kabala_json|json)?[\s\S]*?```/g, '').trim();
+
+      // Generování unikátní ilustrace z Pollinations AI
+      const rawPrompt = kabalaData?.image_prompt || 'Dark fantasy ancient temple realm of Klipot, glowing Hebrew sigils, eerie green fog, cinematic dramatic lighting, 8k digital painting';
+      const cleanPrompt = rawPrompt.replace(/[^\w\s,-]/g, '').trim();
+      const seed = Date.now();
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=960&height=540&nologo=true&seed=${seed}`;
+
+      // Aplikace stat updates
+      if (kabalaData?.stat_updates) {
+        const u = kabalaData.stat_updates;
+        setCharacter(prev => {
+          let nextHp = Math.max(0, Math.min(prev.maxHp, prev.hp + (u.hp_delta || 0)));
+          let nextKavana = Math.max(0, Math.min(prev.maxKavana, prev.kavana + (u.kavana_delta || 0)));
+          let nextSparks = Math.max(0, Math.min(10, prev.sparks + (u.sparks_delta || 0)));
+          let nextInv = [...prev.inventory];
+          if (u.add_item) nextInv.push(u.add_item);
+          if (u.remove_item) nextInv = nextInv.filter((item: string) => item !== u.remove_item);
+          let nextSphere = prev.currentSphereLevel;
+          if (u.sphere_level && u.sphere_level > prev.currentSphereLevel) {
+            nextSphere = u.sphere_level;
+          }
+
+          return {
+            ...prev,
+            hp: nextHp,
+            kavana: nextKavana,
+            sparks: nextSparks,
+            inventory: nextInv,
+            currentSphereLevel: nextSphere
+          };
+        });
+      }
+
+      // Aktualizace finální zprávy s obrázkem a volbami
+      setMessages(prev => prev.map(m => m.id === tempGmId ? {
+        ...m,
+        text: cleanNarration,
+        imageUrl: imageUrl,
+        checkRequired: kabalaData?.check_required || undefined,
+        choices: kabalaData?.choices || []
+      } : m));
+
+      setPendingCheck(kabalaData?.check_required || undefined);
+      setCurrentChoices(kabalaData?.choices || []);
+
+    } catch (err) {
+      console.error('Chyba při streamování tahu:', err);
+      setMessages(prev => prev.map(m => m.id === tempGmId ? {
+        ...m,
+        text: 'Pán Jeskyně se na okamžik odmlčel v hluboké kontemplaci. Zkus prosím akci zopakovat.'
+      } : m));
     } finally {
       setIsThinking(false);
     }
+  };
+
+  // Spuštění úvodního vyprávění
+  const triggerOpeningNarration = (newChar: PlayerCharacter) => {
+    executeTurnStream(
+      newChar,
+      [],
+      'Hra začíná. Hráč vstupuje do první sféry Klipot: Nahemoth (Šepotající kletby). Přivítej ho v roli Pána Jeskyně, popiš ponuré okolí rozbitých nádob a nabídni první zkoušku.'
+    );
   };
 
   // Výběr nové postavy
@@ -119,12 +241,11 @@ export default function Home() {
   };
 
   // Odeslání hráčské akce Pánu Jeskyně
-  const handleSendAction = async (actionText: string) => {
+  const handleSendAction = (actionText: string) => {
     if (isThinking) return;
 
-    // Hráčská zpráva do feedu
     const playerMsg: StoryMessage = {
-      id: 'msg-' + Date.now(),
+      id: 'msg-pl-' + Date.now(),
       sender: 'player',
       text: actionText,
       timestamp: Date.now()
@@ -132,81 +253,7 @@ export default function Home() {
 
     const newMessages = [...messages, playerMsg];
     setMessages(newMessages);
-    setIsThinking(true);
-    setPendingCheck(undefined);
-
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          character,
-          messages: newMessages,
-          actionText
-        })
-      });
-
-      const data = await res.json();
-      if (data.narration) {
-        const kd = data.kabalaData;
-
-        // Aplikujeme případné změny atributů
-        if (kd?.stat_updates) {
-          setCharacter(prev => {
-            let nextHp = prev.hp + (kd.stat_updates.hp_delta || 0);
-            nextHp = Math.max(0, Math.min(prev.maxHp, nextHp));
-
-            let nextKavana = prev.kavana + (kd.stat_updates.kavana_delta || 0);
-            nextKavana = Math.max(0, Math.min(prev.maxKavana, nextKavana));
-
-            let nextSparks = prev.sparks + (kd.stat_updates.sparks_delta || 0);
-            nextSparks = Math.max(0, Math.min(10, nextSparks));
-
-            let nextInv = [...prev.inventory];
-            if (kd.stat_updates.add_item) {
-              nextInv.push(kd.stat_updates.add_item);
-            }
-            if (kd.stat_updates.remove_item) {
-              nextInv = nextInv.filter(item => item !== kd.stat_updates.remove_item);
-            }
-
-            let nextSphere = prev.currentSphereLevel;
-            if (kd.stat_updates.sphere_level && kd.stat_updates.sphere_level > prev.currentSphereLevel) {
-              nextSphere = kd.stat_updates.sphere_level;
-            }
-
-            return {
-              ...prev,
-              hp: nextHp,
-              kavana: nextKavana,
-              sparks: nextSparks,
-              inventory: nextInv,
-              currentSphereLevel: nextSphere
-            };
-          });
-        }
-
-        const gmMsg: StoryMessage = {
-          id: 'msg-' + Date.now(),
-          sender: 'gm',
-          text: data.narration,
-          timestamp: Date.now(),
-          checkRequired: kd?.check_required || undefined,
-          choices: kd?.choices || []
-        };
-
-        setMessages(prev => [...prev, gmMsg]);
-        setPendingCheck(kd?.check_required || undefined);
-        setCurrentChoices(kd?.choices || []);
-        if (isSpeechEnabled) {
-          speechService.speak(data.narration);
-        }
-      }
-    } catch (err) {
-      console.error('Chyba při odesílání akce:', err);
-    } finally {
-      setIsThinking(false);
-    }
+    executeTurnStream(character, newMessages, actionText);
   };
 
   // Dokončení hodu kostkou
