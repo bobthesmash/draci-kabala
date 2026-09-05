@@ -12,6 +12,7 @@ export interface StoryMessage {
   sender: 'gm' | 'player' | 'system' | 'dice';
   text: string;
   imageUrl?: string;
+  asciiArt?: string;
   rollResult?: RollResult;
   timestamp: number;
   checkRequired?: TrapCheck;
