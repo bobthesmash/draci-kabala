@@ -1,0 +1,202 @@
+{
+  "title": "Sefer ha-Zohar - Kabbalistický Kompendium pro Pána Jeskyně",
+  "cosmology": {
+    "concept": "Po Ševirat ha-Kelim (Rozbití nádob) se božské jiskry (Nicanot) propadly do říše skořápek (Klipot / Sitra Achra). Úkolem Adepta je sestoupit těmito sférami temnoty a skrze Tikkun (nápravu) navrátit jiskry do světla Ein Sof.",
+    "realms_of_light_sefirot": [
+      {
+        "id": "keter",
+        "name": "Keter (Koruna)",
+        "aspect": "Nejvyšší vůle, nepopsatelné světlo, počátek všech emanací"
+      },
+      {
+        "id": "chochma",
+        "name": "Chochma (Moudrost)",
+        "aspect": "Prapůvodní myšlenka, blesk inspirace"
+      },
+      {
+        "id": "bina",
+        "name": "Bina (Porozumění)",
+        "aspect": "Lůno forem, matka světů, hluboké vnímání"
+      },
+      {
+        "id": "chesed",
+        "name": "Chesed (Milosrdenství)",
+        "aspect": "Bezmezná láska, proudící darování, bílé světlo"
+      },
+      {
+        "id": "gevura",
+        "name": "Gevura (Přísnost / Soud)",
+        "aspect": "Oheň soudu, hranice, síla a bázeň"
+      },
+      {
+        "id": "tiferet",
+        "name": "Tiferet (Krása / Harmonie)",
+        "aspect": "Srdce stromu, rovnováha mezi Chesed a Gevura, slunce"
+      },
+      {
+        "id": "necach",
+        "name": "Necach (Vítězství)",
+        "aspect": "Vytrvalost, citový triumf, věčnost"
+      },
+      {
+        "id": "hod",
+        "name": "Hod (Nádhera / Sláva)",
+        "aspect": "Racionální řád, intelekt, modlitba a proroctví"
+      },
+      {
+        "id": "jesod",
+        "name": "Jesod (Základ)",
+        "aspect": "Kanál všech sil, astrální říše snů a forem"
+      },
+      {
+        "id": "malkut",
+        "name": "Malkut (Království)",
+        "aspect": "Hmotný svět, Šechina (přítomnost Boží v exilu)"
+      }
+    ],
+    "dungeon_spheres_klipot": [
+      {
+        "level": 1,
+        "id": "nahemoth",
+        "name": "Nahemoth (Šepotající kletby)",
+        "counterpart": "Malkut",
+        "ruler": "Naamah",
+        "theme": "Hmotná hniloba, zamořené hrobky, noční přízraky, plíživý strach"
+      },
+      {
+        "level": 2,
+        "id": "gamaliel",
+        "name": "Gamaliel (Zvrácení / Znečištění)",
+        "counterpart": "Jesod",
+        "ruler": "Lilith",
+        "theme": "Klamné astrální iluze, zvrácené sny, noční můry, ztráta rozumu"
+      },
+      {
+        "level": 3,
+        "id": "samael",
+        "name": "Samael (Jed Boží)",
+        "counterpart": "Hod",
+        "ruler": "Adrammelech",
+        "theme": "Pokřivená logika, rouhání, falešné smlouvy, otravné plyny a jedy"
+      },
+      {
+        "level": 4,
+        "id": "aarab_zaraq",
+        "name": "A'arab Zaraq (Krkavci smrti)",
+        "counterpart": "Necach",
+        "ruler": "Baal",
+        "theme": "Divoká vášeň, krvežíznivost, hejna černých dravců, bitevní vřava"
+      },
+      {
+        "level": 5,
+        "id": "thagirion",
+        "name": "Thagirion (Hádající se / Černé slunce)",
+        "counterpart": "Tiferet",
+        "ruler": "Belphegor",
+        "theme": "Temné slunce, pýcha, rozpad harmonie, falešní mesiáši"
+      },
+      {
+        "level": 6,
+        "id": "golachab",
+        "name": "Golachab (Spalovači)",
+        "counterpart": "Gevura",
+        "ruler": "Asmodeus",
+        "theme": "Nekonečný žár a láva, hněv, tyranská síla, spalující oheň"
+      },
+      {
+        "level": 7,
+        "id": "gaagsheblah",
+        "name": "Gha'agsheblah (Ničitelé)",
+        "counterpart": "Chesed",
+        "ruler": "Astaroth",
+        "theme": "Falešné milosrdenství, dusivý přebytek, zrada pod rouškou přátelství"
+      },
+      {
+        "level": 8,
+        "id": "satariel",
+        "name": "Satariel (Skrývající)",
+        "counterpart": "Bina",
+        "ruler": "Lucifuge Rofocale",
+        "theme": "Kosmická temnota, labyrint zapomnění, ztráta paměti a víry"
+      },
+      {
+        "level": 9,
+        "id": "ghagiel",
+        "name": "Ghagiel (Ztěžovatelé)",
+        "counterpart": "Chochma",
+        "ruler": "Beelzebub",
+        "theme": "Chaos prázdnoty, popření moudrosti, rozpadání identity"
+      },
+      {
+        "level": 10,
+        "id": "thaumiel",
+        "name": "Thaumiel (Dvojhlaví bohové)",
+        "counterpart": "Keter",
+        "ruler": "Satan / Moloch",
+        "theme": "Nejvyšší dualita, popření Jednoty, trůn temnoty a prázdnoty"
+      }
+    ]
+  },
+  "beasts_and_entities": [
+    {
+      "name": "Šed (pl. Šedim)",
+      "type": "Démon z meziprostoru",
+      "desc": "Bytosti zrozené z hněvu a stínu, schopné brát podobu kouře a posednout živé tvory."
+    },
+    {
+      "name": "Lilithina dcera (Lilin)",
+      "type": "Noční přízrak",
+      "desc": "Svůdné a kruté stíny Klipot, sající životní sílu a zraňující duši (Kavanu)."
+    },
+    {
+      "name": "Golem z jílu Gevury",
+      "type": "Magický strážce",
+      "desc": "Kolos oživený svatým slovem Emet (Pravda) vyrytým na čele; smazáním prvního písmene se stane Met (Mrtvý)."
+    },
+    {
+      "name": "Malach ha-Mavet (Anděl zkázy)",
+      "type": "Vyslankyně soudu",
+      "desc": "Okřídlený stín s mečem z černého plamene, zkoušející věrnost a odvahu Adepta."
+    },
+    {
+      "name": "Dybbuk",
+      "type": "Bludná duše",
+      "desc": "Hříšný duch uvězněný mezi světy, toužící po těle a živé krvi."
+    }
+  ],
+  "mystical_words_and_incantations": [
+    {
+      "formula": "Kadosh, Kadosh, Kadosh",
+      "power": "Zapuzení temných stínů, obnovení ochranné aury."
+    },
+    {
+      "formula": "Ana Bekoach",
+      "power": "Theurgická modlitba 42 písmen, láme kletby a pouta Klipot."
+    },
+    {
+      "formula": "Šma Jisrael",
+      "power": "Sjednocení mysli, maximální obrana proti mentálnímu ovládnutí."
+    },
+    {
+      "formula": "Tikkun ha-Nefesh",
+      "power": "Léčení duše a navrácení ztracené Kavany (duševní energie)."
+    }
+  ],
+  "zohar_quotes": [
+    "The part of The Zohar titled Raya Meheimna (Loyal Shepherd) relates how Rashbi attained the soul of Moshe, merged with it, and attained the supernal wisdom",
+    "As Rashbi says in the Talmud ( Sukkah, 45, 2): “I can redeem the entire world from judgment from the day of my birth to the present day",
+    "Rashbi’s disciple, Rabbi Aba, had a unique quality to his soul",
+    "100) that the writing of The Zohar in a secret form was possible because the soul of Rabbi Aba originated from the Surrounding Light, and not from the Inner Light",
+    "This day is celebrated as the holiday of Light",
+    "2 6 THE ZOHAR a Zivug (intention) on Malchut herself and receive for the Creator’s sake",
+    "This is called Ateret Yesod, the part of the Sefira Yesod that remains after the cutting off of the Orla",
+    "Kodesh ha Kodashim—Holy of Holies—the Light of GAR—Neshama-Haya-Yechida",
+    "Question—the sensation of lack of the Light of Hochma in Malchut",
+    "Shechina—Divinity—the sensation (appearance, vision) of the Creator to those who attain Him",
+    "Malchut in the state of reception of the Light (the Creator) is called Shechina",
+    "The sensation of the Creator, the place where one experiences the Creator is called Shechina",
+    "SHACH—Shin-Chaf—300 + 20 = 320 fragments of the broken vessel",
+    "RAPACH—Reish-Peh-Chet—200 + 80 + 8 = 288 fragments of the broken vessel, which one can and must be corrected during the 6,000 years, by climbing the 6,000 steps of the spiritual ladder",
+    "Lev ha Even is corrected only after the 6,000 years, that is, after the Creator Himself corrects the 288 fragments within man"
+  ]
+}

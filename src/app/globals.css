@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=MedievalSharp&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap');
+
+:root {
+  --foreground-rgb: 244, 244, 245;
+  --background-start-rgb: 9, 9, 11;
+  --background-end-rgb: 4, 4, 7;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: radial-gradient(circle at 50% 10%, #17111a 0%, #09090b 70%, #030305 100%);
+  min-height: 100vh;
+  font-family: 'Spectral', Georgia, serif;
+}
+
+/* Custom scrollbar for dark mystical aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(18, 18, 22, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(180, 83, 9, 0.4);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.7);
+}
