@@ -442,8 +442,6 @@ export default function Home() {
             messages={messages}
             isThinking={isThinking}
             isSpeechEnabled={isSpeechEnabled}
-            onSelectChoice={handleSendAction}
-            onTriggerDiceRoll={handleTriggerPendingCheck}
           />
           <ActionControls
             choices={currentChoices}

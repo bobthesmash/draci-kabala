@@ -1,14 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StoryMessage } from '@/lib/game_state';
-import { Sparkles, Dices, User, ScrollText, AlertTriangle, Volume2, Square, Eye, EyeOff } from 'lucide-react';
-import { speechService } from '@/lib/speech';
+import { Sparkles, Dices, User, ScrollText } from 'lucide-react';
 
 interface StoryFeedProps {
   messages: StoryMessage[];
   isThinking: boolean;
   isSpeechEnabled: boolean;
-  onSelectChoice?: (choice: string) => void;
-  onTriggerDiceRoll?: () => void;
 }
 
 const SceneImage: React.FC<{ imageUrl: string }> = ({ imageUrl }) => {
@@ -49,85 +46,12 @@ const SceneImage: React.FC<{ imageUrl: string }> = ({ imageUrl }) => {
 const GmMessageCard: React.FC<{
   msg: StoryMessage;
   isSpeechEnabled: boolean;
-  isLatest: boolean;
-  isThinking: boolean;
-  speakingMsgId: string | null;
-  onToggleSpeak: (id: string, text: string) => void;
-  onSelectChoice?: (choice: string) => void;
-  onTriggerDiceRoll?: () => void;
-}> = ({
-  msg,
-  isSpeechEnabled,
-  isLatest,
-  isThinking,
-  speakingMsgId,
-  onToggleSpeak,
-  onSelectChoice,
-  onTriggerDiceRoll
-}) => {
-  const [showTranscript, setShowTranscript] = useState(!isSpeechEnabled);
-  const isThisSpeaking = speakingMsgId === msg.id;
-
-  useEffect(() => {
-    setShowTranscript(!isSpeechEnabled);
-  }, [isSpeechEnabled]);
-
+}> = ({ msg, isSpeechEnabled }) => {
   return (
     <div className="bg-zinc-900/90 border border-zinc-800/90 rounded-xl p-4 md:p-5 shadow-lg relative group transition hover:border-zinc-700">
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2 text-amber-400 text-xs font-serif font-bold tracking-wide">
-          <ScrollText className="w-4 h-4 text-amber-400" />
-          <span>Pán Jeskyně</span>
-          {isSpeechEnabled && (
-            <span className="text-[10px] text-amber-400/90 font-mono px-2 py-0.5 rounded-full bg-amber-950/80 border border-amber-800/60 flex items-center gap-1">
-              <Volume2 className="w-3 h-3 text-amber-400 animate-pulse" />
-              Zvukový režim (Text skryt)
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Volitelný přepis při zapnutém zvuku */}
-          {isSpeechEnabled && (
-            <button
-              onClick={() => setShowTranscript(prev => !prev)}
-              className="text-[11px] text-zinc-400 hover:text-amber-300 transition flex items-center gap-1 font-serif px-2 py-0.5 rounded bg-zinc-800/60 border border-zinc-700/60"
-              title={showTranscript ? 'Skrýt text vyprávění' : 'Zobrazit text vyprávění'}
-            >
-              {showTranscript ? (
-                <>
-                  <EyeOff className="w-3 h-3" />
-                  <span>Skrýt text</span>
-                </>
-              ) : (
-                <>
-                  <Eye className="w-3 h-3" />
-                  <span>Zobrazit text</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {/* Tlačítko přehrát / zastavit */}
-          <button
-            onClick={() => onToggleSpeak(msg.id, msg.text)}
-            className={`p-1 rounded-md transition text-xs flex items-center gap-1 ${
-              isThisSpeaking
-                ? 'bg-amber-500/20 text-amber-300 animate-pulse'
-                : 'text-zinc-400 hover:text-amber-300 hover:bg-zinc-800'
-            }`}
-            title={isThisSpeaking ? 'Zastavit čtení' : 'Přečíst nahlas'}
-          >
-            {isThisSpeaking ? (
-              <>
-                <Square className="w-3.5 h-3.5 fill-current" />
-                <span className="text-[10px]">Čte...</span>
-              </>
-            ) : (
-              <Volume2 className="w-3.5 h-3.5" />
-            )}
-          </button>
-        </div>
+      <div className="flex items-center gap-2 text-amber-400 text-xs font-serif font-bold tracking-wide mb-2.5">
+        <ScrollText className="w-4 h-4 text-amber-400" />
+        <span>Pán Jeskyně</span>
       </div>
 
       {/* Vizuální scenerie tahu */}
@@ -135,74 +59,10 @@ const GmMessageCard: React.FC<{
         <SceneImage imageUrl={msg.imageUrl} />
       )}
 
-      {/* Vizuální indikace promluvy při skrytém textu */}
-      {isSpeechEnabled && !showTranscript && (
-        <div className="flex items-center gap-2.5 text-xs text-amber-300/80 my-2 py-1.5 px-3 rounded-lg bg-amber-950/30 border border-amber-900/40">
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="w-1 h-3 bg-amber-400 rounded-full animate-pulse" />
-            <span className="w-1 h-4 bg-amber-400 rounded-full animate-pulse delay-100" />
-            <span className="w-1 h-2.5 bg-amber-400 rounded-full animate-pulse delay-200" />
-          </div>
-          <span className="italic font-serif">Pán Jeskyně promlouvá z temnoty sféry...</span>
-        </div>
-      )}
-
-      {/* Text vyprávění: Zobrazuje se buď když je zvuk vypnutý, nebo pokud si ho hráč ručně rozklikne */}
-      {(!isSpeechEnabled || showTranscript) && (
+      {/* Text vyprávění: Zobrazuje se pouze při vypnutém zvuku */}
+      {!isSpeechEnabled && (
         <div className="text-sm md:text-base text-zinc-300 font-serif leading-relaxed whitespace-pre-line selection:bg-amber-900 selection:text-amber-100">
           {msg.text}
-        </div>
-      )}
-
-      {/* Past (pokud je vyhlášena) zůstává vždy viditelná pro jasnou informovanost hráče */}
-      {msg.checkRequired && (
-        <div className="mt-3.5 bg-gradient-to-r from-amber-950/60 via-red-950/40 to-amber-950/60 border border-amber-800/80 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200">
-          <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold text-amber-300">
-                Vyhlášena Past na {msg.checkRequired.stat} (Nebezpečnost: {msg.checkRequired.target}):
-              </span>
-              <p className="text-zinc-300 mt-0.5">{msg.checkRequired.description}</p>
-            </div>
-          </div>
-          {isLatest && onTriggerDiceRoll && (
-            <button
-              onClick={onTriggerDiceRoll}
-              disabled={isThinking}
-              className="w-full sm:w-auto px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_12px_rgba(245,158,11,0.4)] shrink-0 flex items-center justify-center gap-1.5"
-            >
-              <Dices className="w-4 h-4" />
-              Hodit kostkami
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Možnosti reakce hráče */}
-      {msg.choices && msg.choices.length > 0 && !msg.checkRequired && (
-        <div className="mt-4 pt-3 border-t border-zinc-800/80">
-          <div className="text-[11px] font-semibold text-amber-400/90 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Možnosti reakce hráče:</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {msg.choices.map((choice, idx) => (
-              <button
-                key={idx}
-                onClick={() => isLatest && !isThinking && onSelectChoice && onSelectChoice(choice)}
-                disabled={!isLatest || isThinking}
-                className={`text-left rounded-lg p-2.5 text-xs transition flex items-start gap-2 border ${
-                  isLatest && !isThinking
-                    ? 'bg-zinc-800/90 hover:bg-zinc-700/90 border-zinc-700/80 hover:border-amber-500/70 text-zinc-200 cursor-pointer shadow-sm hover:shadow-md'
-                    : 'bg-zinc-900/40 border-zinc-800/50 text-zinc-500 cursor-default'
-                }`}
-              >
-                <span className="text-amber-500/90 font-bold shrink-0">{idx + 1}.</span>
-                <span className="leading-snug">{choice}</span>
-              </button>
-            ))}
-          </div>
         </div>
       )}
     </div>
@@ -212,49 +72,23 @@ const GmMessageCard: React.FC<{
 export const StoryFeed: React.FC<StoryFeedProps> = ({
   messages,
   isThinking,
-  isSpeechEnabled,
-  onSelectChoice,
-  onTriggerDiceRoll
+  isSpeechEnabled
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
-  const handleToggleSpeak = (msgId: string, text: string) => {
-    if (speakingMsgId === msgId) {
-      speechService.stop();
-      setSpeakingMsgId(null);
-    } else {
-      setSpeakingMsgId(msgId);
-      speechService.speak(
-        text,
-        () => setSpeakingMsgId(null),
-        () => setSpeakingMsgId(null)
-      );
-    }
-  };
-
-  // Nalezení indexu poslední zprávy Pána Jeskyně
-  const lastGmIndex = messages.map(m => m.sender).lastIndexOf('gm');
-
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-      {messages.map((msg, idx) => {
+      {messages.map((msg) => {
         if (msg.sender === 'gm') {
           return (
             <GmMessageCard
               key={msg.id}
               msg={msg}
               isSpeechEnabled={isSpeechEnabled}
-              isLatest={idx === lastGmIndex}
-              isThinking={isThinking}
-              speakingMsgId={speakingMsgId}
-              onToggleSpeak={handleToggleSpeak}
-              onSelectChoice={onSelectChoice}
-              onTriggerDiceRoll={onTriggerDiceRoll}
             />
           );
         }
