@@ -441,6 +441,9 @@ export default function Home() {
           <StoryFeed
             messages={messages}
             isThinking={isThinking}
+            isSpeechEnabled={isSpeechEnabled}
+            onSelectChoice={handleSendAction}
+            onTriggerDiceRoll={handleTriggerPendingCheck}
           />
           <ActionControls
             choices={currentChoices}
