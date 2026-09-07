@@ -1,32 +1,38 @@
 /**
- * Web Speech API utility pro plynulé a streamované hlasové předčítání Pána Jeskyně
+ * Hlasová služba pro plynulé a přirozené čtení Pána Jeskyně v ryzí češtině
+ * Využívá nativní českou hlasovou syntézu přes /api/tts (přirozená česká výslovnost s diakritikou)
+ * s plynulou frontou a automatickým přednačítáním následujících vět.
  */
 
 class SpeechService {
-  private synth: SpeechSynthesis | null = null;
-  private czechVoice: SpeechSynthesisVoice | null = null;
+  private currentAudio: HTMLAudioElement | null = null;
   private sentenceQueue: string[] = [];
   private isProcessingQueue: boolean = false;
   private onQueueFinishedCallback: (() => void) | null = null;
+  private synth: SpeechSynthesis | null = null;
+  private czechVoice: SpeechSynthesisVoice | null = null;
 
   constructor() {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      this.synth = window.speechSynthesis;
-      this.initVoices();
-      if (this.synth.onvoiceschanged !== undefined) {
-        this.synth.onvoiceschanged = () => this.initVoices();
+    if (typeof window !== 'undefined') {
+      if ('speechSynthesis' in window) {
+        this.synth = window.speechSynthesis;
+        this.initBrowserVoices();
+        if (this.synth.onvoiceschanged !== undefined) {
+          this.synth.onvoiceschanged = () => this.initBrowserVoices();
+        }
       }
     }
   }
 
-  private initVoices() {
+  private initBrowserVoices() {
     if (!this.synth) return;
-    const voices = this.synth.getVoices();
-    // Hledáme český hlas
-    const cs = voices.find(v => v.lang.startsWith('cs') || v.lang.includes('Czech'));
-    if (cs) {
-      this.czechVoice = cs;
-    }
+    try {
+      const voices = this.synth.getVoices();
+      const cs = voices.find(v => v.lang.startsWith('cs') || v.lang.includes('Czech') || v.name.includes('Czech'));
+      if (cs) {
+        this.czechVoice = cs;
+      }
+    } catch {}
   }
 
   private cleanSentence(text: string): string {
@@ -43,35 +49,41 @@ class SpeechService {
    * Přečte celý text najednou
    */
   public speak(text: string, onEnd?: () => void, onError?: () => void) {
-    if (!this.synth) return;
     this.stop();
 
     const cleanText = this.cleanSentence(text);
     if (!cleanText) return;
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    if (this.czechVoice) {
-      utterance.voice = this.czechVoice;
-      utterance.lang = this.czechVoice.lang;
-    } else {
-      utterance.lang = 'cs-CZ';
+    // Primárně použijeme nativní českou syntézu (garance perfektní české výslovnosti)
+    try {
+      const audioUrl = `/api/tts?text=${encodeURIComponent(cleanText)}`;
+      const audio = new Audio(audioUrl);
+      this.currentAudio = audio;
+      audio.playbackRate = 0.98;
+
+      audio.onended = () => {
+        this.currentAudio = null;
+        onEnd?.();
+      };
+
+      audio.onerror = () => {
+        this.currentAudio = null;
+        // Fallback na prohlížeč
+        this.fallbackBrowserSpeak(cleanText, onEnd, onError);
+      };
+
+      audio.play().catch(() => {
+        this.fallbackBrowserSpeak(cleanText, onEnd, onError);
+      });
+    } catch {
+      this.fallbackBrowserSpeak(cleanText, onEnd, onError);
     }
-
-    utterance.pitch = 0.92;
-    utterance.rate = 0.96;
-
-    utterance.onend = () => onEnd?.();
-    utterance.onerror = () => onError?.();
-
-    this.synth.speak(utterance);
   }
 
   /**
-   * Přidá větu do fronty pro okamžité streamované předčítání
+   * Přidá větu do fronty pro okamžité streamované předčítání (hráč nečeká na celý odstavec)
    */
   public enqueueSentence(sentence: string, onAllDone?: () => void) {
-    if (!this.synth) return;
-
     if (onAllDone) {
       this.onQueueFinishedCallback = onAllDone;
     }
@@ -87,10 +99,9 @@ class SpeechService {
   }
 
   private processNextInQueue() {
-    if (!this.synth) return;
-
     if (this.sentenceQueue.length === 0) {
       this.isProcessingQueue = false;
+      this.currentAudio = null;
       this.onQueueFinishedCallback?.();
       this.onQueueFinishedCallback = null;
       return;
@@ -103,26 +114,59 @@ class SpeechService {
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (this.czechVoice) {
-      utterance.voice = this.czechVoice;
-      utterance.lang = this.czechVoice.lang;
-    } else {
-      utterance.lang = 'cs-CZ';
+    try {
+      const audioUrl = `/api/tts?text=${encodeURIComponent(text)}`;
+      const audio = new Audio(audioUrl);
+      this.currentAudio = audio;
+      audio.playbackRate = 0.98;
+
+      // Přednačteme hned následující větu z fronty pro plynulý přechod bez prodlevy
+      if (this.sentenceQueue.length > 0) {
+        const nextUrl = `/api/tts?text=${encodeURIComponent(this.sentenceQueue[0])}`;
+        const preloader = new Audio(nextUrl);
+        preloader.load();
+      }
+
+      audio.onended = () => {
+        this.processNextInQueue();
+      };
+
+      audio.onerror = () => {
+        // Při chybě sítě zkusíme fallback na browser nebo pokračujeme na další větu
+        this.fallbackBrowserSpeak(text, () => this.processNextInQueue(), () => this.processNextInQueue());
+      };
+
+      audio.play().catch((err) => {
+        console.warn('Audio play prevented (čeká se na interakci uživatele):', err);
+        this.processNextInQueue();
+      });
+    } catch {
+      this.processNextInQueue();
+    }
+  }
+
+  private fallbackBrowserSpeak(text: string, onEnd?: () => void, onError?: () => void) {
+    if (!this.synth) {
+      onError?.();
+      return;
     }
 
-    utterance.pitch = 0.92;
-    utterance.rate = 0.96;
-
-    utterance.onend = () => {
-      this.processNextInQueue();
-    };
-
-    utterance.onerror = () => {
-      this.processNextInQueue();
-    };
-
-    this.synth.speak(utterance);
+    try {
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (this.czechVoice) {
+        utterance.voice = this.czechVoice;
+        utterance.lang = this.czechVoice.lang;
+      } else {
+        utterance.lang = 'cs-CZ';
+      }
+      utterance.pitch = 0.95;
+      utterance.rate = 0.98;
+      utterance.onend = () => onEnd?.();
+      utterance.onerror = () => onError?.();
+      this.synth.speak(utterance);
+    } catch {
+      onError?.();
+    }
   }
 
   /**
@@ -132,13 +176,22 @@ class SpeechService {
     this.sentenceQueue = [];
     this.isProcessingQueue = false;
     this.onQueueFinishedCallback = null;
+
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+      this.currentAudio = null;
+    }
+
     if (this.synth && (this.synth.speaking || this.synth.pending)) {
-      this.synth.cancel();
+      try {
+        this.synth.cancel();
+      } catch {}
     }
   }
 
   public isSpeaking(): boolean {
-    return !!this.synth && (this.synth.speaking || this.isProcessingQueue);
+    return this.isProcessingQueue || (this.currentAudio !== null && !this.currentAudio.paused);
   }
 }
 
