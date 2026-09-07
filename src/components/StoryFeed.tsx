@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StoryMessage } from '@/lib/game_state';
-import { Sparkles, Dices, User, ScrollText } from 'lucide-react';
+import { Dices, User, ScrollText } from 'lucide-react';
+import { DreidelSpinner } from '@/components/DreidelSpinner';
 
 interface StoryFeedProps {
   messages: StoryMessage[];
@@ -15,8 +16,8 @@ const SceneImage: React.FC<{ imageUrl: string }> = ({ imageUrl }) => {
   return (
     <div className="mb-4 rounded-xl overflow-hidden border border-amber-900/60 relative aspect-video bg-zinc-950 shadow-xl">
       {!loaded && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-500 bg-zinc-950 z-10">
-          <Sparkles className="w-6 h-6 text-amber-400 animate-spin" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-zinc-500 bg-zinc-950 z-10">
+          <DreidelSpinner size="md" />
           <span className="text-xs font-serif italic text-amber-300/90 tracking-wide">
             Vyvolávám vizi sféry...
           </span>
@@ -137,9 +138,11 @@ export const StoryFeed: React.FC<StoryFeedProps> = ({
       })}
 
       {isThinking && (
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 flex items-center gap-3 text-zinc-400 text-sm">
-          <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
-          <span className="italic font-serif">Pán Jeskyně zvažuje tvůj osud v plamenech Gevury...</span>
+        <div className="bg-zinc-900/80 border border-amber-900/50 rounded-xl p-3.5 sm:p-4 flex items-center gap-3.5 text-zinc-300 text-sm shadow-xl">
+          <DreidelSpinner size="sm" />
+          <span className="italic font-serif text-amber-200/90">
+            Pán Jeskyně zvažuje tvůj osud v plamenech Gevury...
+          </span>
         </div>
       )}
 
